@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="/src/output.css" rel="stylesheet" />
+  <title>TutorGPT</title>
+</head>
+<body>
+  <div id="app" class="app"></div>
+
+  <!-- Selection Popover -->
+  <div class="popover" id="selection-popover">
+    <div class="popover-content">
+      <div class="popover-preview" id="popover-preview"></div>
+      <div class="popover-input-group">
+        <input
+          type="text"
+          class="input"
+          id="popover-input"
+          placeholder="Ask about this..."
+          autocomplete="off"
+        />
+        <button class="popover-submit" id="popover-submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <span class="loading-text">Thinking...</span>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>
