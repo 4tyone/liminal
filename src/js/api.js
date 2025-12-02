@@ -64,6 +64,10 @@ export async function reorderPages(projectId, order) {
   return await invoke('reorder_pages', { projectId, order });
 }
 
+export async function importFolder(folderPath, title, description) {
+  return await invoke('import_folder', { folderPath, title, description });
+}
+
 // AI commands (stubs - you will implement these)
 export async function generateLearning(topic, depth) {
   return await invoke('generate_learning', { topic, depth });
@@ -75,6 +79,31 @@ export async function expandSelection(projectId, pageName, selection, question) 
 
 export async function removeExpansion(projectId, pageName, expansionId) {
   return await invoke('remove_expansion', { projectId, pageName, expansionId });
+}
+
+export async function answerQuestion(selection, question) {
+  return await invoke('answer_question', { selection, question });
+}
+
+// Chat commands
+export async function listChatSessions(projectId) {
+  return await invoke('list_chat_sessions', { projectId });
+}
+
+export async function createChatSession(projectId) {
+  return await invoke('create_chat_session', { projectId });
+}
+
+export async function getChatSession(projectId, sessionId) {
+  return await invoke('get_chat_session', { projectId, sessionId });
+}
+
+export async function deleteChatSession(projectId, sessionId) {
+  return await invoke('delete_chat_session', { projectId, sessionId });
+}
+
+export async function sendChatMessage(projectId, sessionId, message) {
+  return await invoke('send_chat_message', { projectId, sessionId, message });
 }
 
 // Export commands

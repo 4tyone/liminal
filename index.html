@@ -13,12 +13,16 @@
   <div class="popover" id="selection-popover">
     <div class="popover-content">
       <div class="popover-preview" id="popover-preview"></div>
+      <div class="popover-mode-toggle">
+        <button id="mode-answer" class="popover-mode-btn active" data-mode="answer">Answer</button>
+        <button id="mode-edit" class="popover-mode-btn" data-mode="edit">Edit</button>
+      </div>
       <div class="popover-input-group">
         <input
           type="text"
           class="input"
           id="popover-input"
-          placeholder="Ask about this..."
+          placeholder="Ask a question about this..."
           autocomplete="off"
         />
         <button class="popover-submit" id="popover-submit">
@@ -28,6 +32,7 @@
           </svg>
         </button>
       </div>
+      <div id="popover-answer" class="popover-answer hidden"></div>
     </div>
   </div>
 

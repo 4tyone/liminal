@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "liminal",
-  "version": "0.1.0",
+  "productName": "Liminal",
+  "version": "0.2.2",
   "identifier": "com.melshakobyan.liminal",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -34,6 +34,23 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns"
-    ]
+    ],
+    "macOS": {
+      "dmg": {
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 },
+        "windowSize": { "height": 400, "width": 660 },
+        "background": "dmg-background/background.png"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/4tyone/liminal-download/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVDQjNDRjU4ODgyREQxQjgKUldTNDBTMklXTSt6N0ZscU1YODR5clFhZVA4WVMxekMzVHN1cHVqVzlpSXVvUmpLbWFSYWdUcngK"
+    }
   }
 }

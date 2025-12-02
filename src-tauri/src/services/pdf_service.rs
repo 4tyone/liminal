@@ -3,7 +3,7 @@ use headless_chrome::{Browser, LaunchOptions, types::PrintToPdfOptions};
 use std::fs;
 use std::time::Duration;
 
-const WEBSITE_URL: &str = "https://liminal.app";
+const WEBSITE_URL: &str = "https://liminal.wrappt.tech";
 const WATERMARK_TEXT: &str = "Customize your learning with Liminal";
 
 /// Generate a PDF document with embedded CSS that matches the app's styling

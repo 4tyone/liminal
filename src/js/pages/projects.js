@@ -1,8 +1,10 @@
-import { listProjects, createProject, deleteProject, generateLearning } from '../api.js';
+import { listProjects, createProject, deleteProject, generateLearning, importFolder } from '../api.js';
 import { showSuccess, showError } from '../components/toast.js';
 import { router } from '../router.js';
 import { showGenerationLoading, hideLoading } from '../components/loading.js';
 import { confirmAction } from '../components/confirm-modal.js';
+
+const { open: openDialog } = window.__TAURI__.dialog;
 
 let isGenerating = false;
 
@@ -51,6 +53,15 @@ export async function renderProjects() {
               </svg>
             </button>
           </div>
+          <div id="agent-status" class="agent-status"></div>
+          <button id="import-btn" class="import-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Import folder
+          </button>
         </div>
 
         <!-- Projects Grid -->
@@ -77,9 +88,9 @@ export async function renderProjects() {
     topicInput.style.height = topicInput.scrollHeight + 'px';
   });
 
-  // Cmd/Ctrl+Enter to submit
+  // Enter to submit, Shift+Enter for new line
   topicInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleGenerate();
     }
@@ -87,6 +98,9 @@ export async function renderProjects() {
 
   // Generate button click
   document.getElementById('generate-btn').addEventListener('click', handleGenerate);
+
+  // Import button click
+  document.getElementById('import-btn').addEventListener('click', handleImport);
 }
 
 async function loadProjects() {
@@ -193,6 +207,76 @@ async function handleGenerate() {
     input.disabled = false;
     hideLoading();
   }
+}
+
+async function handleImport() {
+  try {
+    // Open folder picker dialog
+    const folderPath = await openDialog({
+      directory: true,
+      multiple: false,
+      title: 'Select folder with markdown files'
+    });
+
+    if (!folderPath) return; // User cancelled
+
+    // Show a simple prompt for title and description
+    const title = await promptForInput('Learning Title', 'Enter a title for this learning:');
+    if (!title) return; // User cancelled
+
+    const description = await promptForInput('Description', 'Enter a brief description (optional):') || '';
+
+    showGenerationLoading();
+
+    const project = await importFolder(folderPath, title, description);
+    showSuccess('Folder imported successfully!');
+    router.navigate(`/project/${project.id}`);
+  } catch (e) {
+    showError('Failed to import: ' + e);
+  } finally {
+    hideLoading();
+  }
+}
+
+function promptForInput(title, message) {
+  return new Promise((resolve) => {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h3 class="modal-title">${title}</h3>
+        <p class="modal-message">${message}</p>
+        <input type="text" class="modal-input" id="prompt-input" autofocus />
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-cancel" id="prompt-cancel">Cancel</button>
+          <button class="modal-btn modal-btn-confirm" id="prompt-confirm">OK</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#prompt-input');
+    const cancelBtn = overlay.querySelector('#prompt-cancel');
+    const confirmBtn = overlay.querySelector('#prompt-confirm');
+
+    const cleanup = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+
+    cancelBtn.addEventListener('click', () => cleanup(null));
+    confirmBtn.addEventListener('click', () => cleanup(input.value.trim()));
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') cleanup(input.value.trim());
+      if (e.key === 'Escape') cleanup(null);
+    });
+
+    // Focus input after a short delay
+    setTimeout(() => input.focus(), 100);
+  });
 }
 
 function escapeHtml(text) {

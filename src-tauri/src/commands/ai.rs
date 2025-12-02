@@ -1,12 +1,13 @@
 use crate::models::{ProjectMeta, SelectionRange, ExpansionResult};
 use crate::services::{ai_service, config_service};
+use tauri::AppHandle;
 
 #[tauri::command]
-pub async fn generate_learning(topic: String, depth: String) -> Result<ProjectMeta, String> {
+pub async fn generate_learning(app: AppHandle, topic: String, depth: String) -> Result<ProjectMeta, String> {
     let api_key = config_service::get_api_key()?
         .ok_or("API key not configured")?;
 
-    ai_service::generate_learning_material(&topic, &depth, &api_key).await
+    ai_service::generate_learning_material(&topic, &depth, &api_key, app).await
 }
 
 #[tauri::command]
@@ -46,4 +47,15 @@ pub fn remove_expansion(
     save_page_content(&project_id, &page_name, &updated)?;
 
     Ok(updated)
+}
+
+#[tauri::command]
+pub async fn answer_question(
+    selection: SelectionRange,
+    question: String,
+) -> Result<String, String> {
+    let api_key = config_service::get_api_key()?
+        .ok_or("API key not configured")?;
+
+    ai_service::answer_question(&selection, &question, &api_key).await
 }

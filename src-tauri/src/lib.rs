@@ -9,6 +9,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             // Config commands
             get_api_key,
@@ -28,10 +29,18 @@ pub fn run() {
             save_page_content,
             add_page,
             reorder_pages,
+            import_folder,
             // AI commands
             generate_learning,
             expand_selection,
             remove_expansion,
+            answer_question,
+            // Chat commands
+            list_chat_sessions,
+            create_chat_session,
+            get_chat_session,
+            delete_chat_session,
+            send_chat_message,
             // Export commands
             export_to_pdf,
             get_exports_dir,

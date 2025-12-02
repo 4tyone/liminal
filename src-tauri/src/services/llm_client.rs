@@ -130,4 +130,12 @@ impl LlmClient {
             content: content.to_string(),
         }
     }
+
+    /// Helper to create an assistant message
+    pub fn assistant_message(content: &str) -> ChatMessage {
+        ChatMessage {
+            role: "assistant".to_string(),
+            content: content.to_string(),
+        }
+    }
 }

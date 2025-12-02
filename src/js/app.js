@@ -3,6 +3,7 @@ import { renderSettings } from './pages/settings.js';
 import { renderProjects } from './pages/projects.js';
 import { renderReader } from './pages/reader.js';
 import { getApiKey } from './api.js';
+import { initUpdater } from './updater.js';
 
 // Register routes
 router.register('/settings', renderSettings);
@@ -18,6 +19,9 @@ async function init() {
     } else {
       router.start();
     }
+
+    // Initialize auto-updater (checks silently on startup)
+    initUpdater();
   } catch (e) {
     // No API key set, go to settings
     router.navigate('/settings');

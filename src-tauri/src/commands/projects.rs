@@ -46,3 +46,8 @@ pub fn reorder_pages(project_id: String, order: Vec<String>) -> Result<(), Strin
     meta.page_order = order;
     file_service::save_project(&meta)
 }
+
+#[tauri::command]
+pub fn import_folder(folder_path: String, title: String, description: String) -> Result<ProjectMeta, String> {
+    file_service::import_folder_as_project(&folder_path, &title, &description)
+}

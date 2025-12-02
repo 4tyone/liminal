@@ -1,16 +1,21 @@
 let currentSelection = null;
 let onAskCallback = null;
+let onAnswerCallback = null;
 let mousedownHandler = null;
 let mouseupHandler = null;
 let keyupHandler = null;
 let isLoading = false;
+let currentMode = 'answer'; // 'answer' or 'edit'
 
-export function initSelectionPopover(onAsk) {
+export function initSelectionPopover(onAsk, onAnswer) {
   onAskCallback = onAsk;
+  onAnswerCallback = onAnswer;
 
   const popover = document.getElementById('selection-popover');
   const popoverInput = document.getElementById('popover-input');
   const popoverSubmit = document.getElementById('popover-submit');
+  const modeAnswer = document.getElementById('mode-answer');
+  const modeEdit = document.getElementById('mode-edit');
 
   if (!popover || !popoverInput || !popoverSubmit) {
     return;
@@ -27,6 +32,12 @@ export function initSelectionPopover(onAsk) {
   document.addEventListener('mouseup', mouseupHandler);
   document.addEventListener('keyup', keyupHandler);
   document.addEventListener('mousedown', mousedownHandler);
+
+  // Mode toggle handlers
+  if (modeAnswer && modeEdit) {
+    modeAnswer.addEventListener('click', () => setMode('answer'));
+    modeEdit.addEventListener('click', () => setMode('edit'));
+  }
 
   // Submit handlers
   popoverInput.addEventListener('keydown', (e) => {
@@ -49,6 +60,32 @@ export function cleanupSelectionPopover() {
   if (keyupHandler) document.removeEventListener('keyup', keyupHandler);
   if (mousedownHandler) document.removeEventListener('mousedown', mousedownHandler);
   hidePopover();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  const modeAnswer = document.getElementById('mode-answer');
+  const modeEdit = document.getElementById('mode-edit');
+  const popoverInput = document.getElementById('popover-input');
+  const answerArea = document.getElementById('popover-answer');
+
+  if (modeAnswer && modeEdit) {
+    modeAnswer.classList.toggle('active', mode === 'answer');
+    modeEdit.classList.toggle('active', mode === 'edit');
+  }
+
+  // Update placeholder based on mode
+  if (popoverInput) {
+    popoverInput.placeholder = mode === 'answer'
+      ? 'Ask a question about this...'
+      : 'What should be added or changed?';
+  }
+
+  // Hide answer area when switching modes
+  if (answerArea) {
+    answerArea.classList.add('hidden');
+    answerArea.textContent = '';
+  }
 }
 
 function handleSelectionEnd(event) {
@@ -81,11 +118,19 @@ function showPopover(rect, text) {
   const popover = document.getElementById('selection-popover');
   const popoverPreview = document.getElementById('popover-preview');
   const popoverInput = document.getElementById('popover-input');
+  const answerArea = document.getElementById('popover-answer');
 
   if (!popover || !popoverPreview || !popoverInput) return;
 
   const truncatedText = text.length > 60 ? text.slice(0, 60) + '...' : text;
   popoverPreview.textContent = `"${truncatedText}"`;
+
+  // Reset to default mode and clear answer
+  setMode('answer');
+  if (answerArea) {
+    answerArea.classList.add('hidden');
+    answerArea.textContent = '';
+  }
 
   // Position popover centered below selection
   const popoverWidth = 320;
@@ -106,8 +151,13 @@ function showPopover(rect, text) {
 }
 
 function submitQuestion(question) {
-  if (currentSelection && onAskCallback) {
-    showPopoverLoading();
+  if (!currentSelection) return;
+
+  showPopoverLoading();
+
+  if (currentMode === 'answer' && onAnswerCallback) {
+    onAnswerCallback(currentSelection.text, question);
+  } else if (currentMode === 'edit' && onAskCallback) {
     onAskCallback(currentSelection.text, question);
   }
 }
@@ -116,6 +166,8 @@ function showPopoverLoading() {
   isLoading = true;
   const popoverSubmit = document.getElementById('popover-submit');
   const popoverInput = document.getElementById('popover-input');
+  const modeAnswer = document.getElementById('mode-answer');
+  const modeEdit = document.getElementById('mode-edit');
 
   if (popoverSubmit) {
     popoverSubmit.innerHTML = `<div class="popover-spinner"></div>`;
@@ -124,12 +176,17 @@ function showPopoverLoading() {
   if (popoverInput) {
     popoverInput.disabled = true;
   }
+  // Disable mode toggle while loading
+  if (modeAnswer) modeAnswer.disabled = true;
+  if (modeEdit) modeEdit.disabled = true;
 }
 
 export function hidePopoverLoading() {
   isLoading = false;
   const popoverSubmit = document.getElementById('popover-submit');
   const popoverInput = document.getElementById('popover-input');
+  const modeAnswer = document.getElementById('mode-answer');
+  const modeEdit = document.getElementById('mode-edit');
 
   if (popoverSubmit) {
     popoverSubmit.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -142,15 +199,32 @@ export function hidePopoverLoading() {
     popoverInput.disabled = false;
     popoverInput.value = '';
   }
+  // Re-enable mode toggle
+  if (modeAnswer) modeAnswer.disabled = false;
+  if (modeEdit) modeEdit.disabled = false;
+}
+
+export function showAnswer(answer) {
+  hidePopoverLoading();
+  const answerArea = document.getElementById('popover-answer');
+  if (answerArea) {
+    answerArea.textContent = answer;
+    answerArea.classList.remove('hidden');
+  }
 }
 
 export function hidePopover() {
   const popover = document.getElementById('selection-popover');
   const popoverInput = document.getElementById('popover-input');
+  const answerArea = document.getElementById('popover-answer');
 
   hidePopoverLoading();
   if (popover) popover.classList.remove('visible');
   if (popoverInput) popoverInput.value = '';
+  if (answerArea) {
+    answerArea.classList.add('hidden');
+    answerArea.textContent = '';
+  }
   currentSelection = null;
   window.getSelection()?.removeAllRanges();
 }
