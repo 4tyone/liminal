@@ -1,8 +1,27 @@
-# Liminal
+<p align="center">
+  <img src="docs/icon.png" alt="Liminal Logo" width="128" height="128">
+</p>
 
-**Build Your Custom Learning Experience**
+<h1 align="center">Liminal</h1>
 
-Liminal is a desktop app that generates personalized, book-quality learning materials on any topic. Ask questions, get instant explanations, and master concepts faster than ever.
+<p align="center">
+  <strong>Build Your Custom Learning Experience</strong>
+</p>
+
+<p align="center">
+  Liminal is a desktop app that generates personalized, book-quality learning materials on any topic. Ask questions, get instant explanations, and master concepts faster than ever.
+</p>
+
+<p align="center">
+  <a href="https://liminal.melshakobyan.com">Website</a> •
+  <a href="https://github.com/4tyone/liminal/releases">Download</a>
+</p>
+
+<p align="center">
+  <a href="https://liminal.melshakobyan.com">
+    <strong>Watch the demo on the website →</strong>
+  </a>
+</p>
 
 ## Features
 
