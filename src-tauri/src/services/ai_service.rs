@@ -4,7 +4,7 @@ use crate::services::file_service::{
     save_page_content, load_project, load_chat_session, save_chat_session
 };
 use crate::services::llm_client::LlmClient;
-use crate::services::config_service;
+
 use uuid::Uuid;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -498,15 +498,11 @@ fn emit_agent_status(app: &AppHandle, message: &str, iteration: u32, tool_name: 
 pub async fn generate_learning_material(
     topic: &str,
     depth: &str,
-    api_key: &str,
+    _api_key: &str,
     app: AppHandle,
 ) -> Result<ProjectMeta, String> {
-    // Get configuration
-    let config = config_service::get_full_config()?;
-    let base_url = config.base_url.unwrap_or_default();
-    let model = config.model.unwrap_or_else(|| "gpt-4o-mini".to_string());
-
-    let client = LlmClient::new(&base_url, api_key, &model);
+    // Create LLM client from config
+    let client = LlmClient::from_config()?;
 
     // Emit initial status
     emit_agent_status(&app, "Starting content generation...", 0, None);
@@ -541,7 +537,7 @@ pub async fn generate_learning_material(
         state.iteration += 1;
 
         // Call the LLM
-        let response = client.chat_completion(messages.clone(), Some(0.7), Some(4000)).await?;
+        let response = client.chat_completion(messages.clone(), Some(0.7)).await?;
 
         // Extract and emit agent's thinking (if any)
         if let Some(thinking) = extract_agent_thinking(&response) {
@@ -1113,14 +1109,11 @@ pub async fn expand_selection_with_ai(
     page_name: &str,
     selection: &SelectionRange,
     question: &str,
-    api_key: &str,
+    _api_key: &str,
 ) -> Result<ExpansionResult, String> {
     // Get configuration
-    let config = config_service::get_full_config()?;
-    let base_url = config.base_url.unwrap_or_default();
-    let model = config.model.unwrap_or_else(|| "gpt-4o-mini".to_string());
-
-    let client = LlmClient::new(&base_url, api_key, &model);
+    // Create LLM client from config
+    let client = LlmClient::from_config()?;
 
     // Load the current page content
     let content = load_page_content(project_id, page_name)?;
@@ -1136,7 +1129,7 @@ pub async fn expand_selection_with_ai(
         LlmClient::user_message(&user_prompt),
     ];
 
-    let response = client.chat_completion(messages, Some(0.7), Some(2000)).await?;
+    let response = client.chat_completion(messages, Some(0.7)).await?;
 
     // Parse the patch from the AI response
     let operations = parse_patch(&response)?;
@@ -1203,14 +1196,10 @@ Your task is to provide a clear, concise answer to their question.
 pub async fn answer_question(
     selection: &SelectionRange,
     question: &str,
-    api_key: &str,
+    _api_key: &str,
 ) -> Result<String, String> {
-    // Get configuration
-    let config = config_service::get_full_config()?;
-    let base_url = config.base_url.unwrap_or_default();
-    let model = config.model.unwrap_or_else(|| "gpt-4o-mini".to_string());
-
-    let client = LlmClient::new(&base_url, api_key, &model);
+    // Create LLM client from config
+    let client = LlmClient::from_config()?;
 
     // Build the prompt
     let user_prompt = format!(
@@ -1223,7 +1212,7 @@ pub async fn answer_question(
         LlmClient::user_message(&user_prompt),
     ];
 
-    let response = client.chat_completion(messages, Some(0.7), Some(500)).await?;
+    let response = client.chat_completion(messages, Some(0.7)).await?;
 
     Ok(response.trim().to_string())
 }
@@ -1639,15 +1628,11 @@ pub async fn run_editing_agent(
     project_id: &str,
     session_id: &str,
     user_message: &str,
-    api_key: &str,
+    _api_key: &str,
     app: AppHandle,
 ) -> Result<ChatAgentResult, String> {
-    // Get configuration
-    let config = config_service::get_full_config()?;
-    let base_url = config.base_url.unwrap_or_default();
-    let model = config.model.unwrap_or_else(|| "gpt-4o-mini".to_string());
-
-    let client = LlmClient::new(&base_url, api_key, &model);
+    // Create LLM client from config
+    let client = LlmClient::from_config()?;
 
     // Load the session to get history
     let mut session = load_chat_session(project_id, session_id)?;
@@ -1723,7 +1708,7 @@ pub async fn run_editing_agent(
         state.iteration += 1;
 
         // Call the LLM
-        let response = client.chat_completion(messages.clone(), Some(0.7), Some(4000)).await?;
+        let response = client.chat_completion(messages.clone(), Some(0.7)).await?;
 
         // Add assistant response to messages
         messages.push(LlmClient::assistant_message(&response));
@@ -1782,7 +1767,7 @@ pub async fn run_editing_agent(
             "Now use the respond tool to tell the user what you did."
         ));
 
-        if let Ok(summary_response) = client.chat_completion(messages, Some(0.7), Some(1000)).await {
+        if let Ok(summary_response) = client.chat_completion(messages, Some(0.7)).await {
             if let Ok(tool_call) = parse_tool_call(&summary_response) {
                 if tool_call.name == "respond" {
                     if let Some(msg) = tool_call.arguments.get("message").and_then(|v| v.as_str()) {

@@ -1,19 +1,60 @@
-import { getApiKey, setApiKey, checkAuthStatus, startSignIn, signOut, fetchApiKeyFromServer } from '../api.js';
+import { getConfig, setApiKey, setBaseUrl, setModel, setProvider } from '../api.js';
 import { showSuccess, showError } from '../components/toast.js';
 import { router } from '../router.js';
+import { checkForUpdates } from '../updater.js';
 
-let isSigningIn = false;
+// Provider presets with default values
+const PROVIDERS = {
+  openai: {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-5.1',
+    available: true,
+    description: 'GPT models via OpenAI API'
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: 'anthropic/claude-sonnet-4',
+    available: true,
+    description: 'Access multiple providers through one API'
+  },
+  custom: {
+    name: 'Custom Endpoint',
+    baseUrl: '',
+    model: '',
+    available: true,
+    description: 'Any OpenAI-compatible API endpoint'
+  },
+  anthropic: {
+    name: 'Anthropic',
+    baseUrl: 'https://api.anthropic.com/v1',
+    model: 'claude-sonnet-4-20250514',
+    available: false,
+    description: 'Not available - use OpenRouter for Claude models'
+  },
+  google: {
+    name: 'Google AI',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    model: 'gemini-pro',
+    available: false,
+    description: 'Not available - only OpenAI-compatible APIs supported'
+  }
+};
 
 export async function renderSettings() {
   const app = document.getElementById('app');
 
-  // Check auth status first
-  let authStatus = { isAuthenticated: false, email: null };
+  // Load current config
+  let config = { provider: 'openai', base_url: null, model: null, api_key: null };
   try {
-    authStatus = await checkAuthStatus();
+    config = await getConfig();
   } catch (e) {
-    // Not authenticated
+    // Use defaults
   }
+
+  const currentProvider = config.provider || 'openai';
+  const providerInfo = PROVIDERS[currentProvider] || PROVIDERS.openai;
 
   app.innerHTML = `
     <div class="main-content">
@@ -23,174 +64,220 @@ export async function renderSettings() {
           <p class="settings-subtitle">Build Your Custom Learning Experience</p>
         </div>
 
+        <!-- Provider Configuration -->
         <div class="card">
-          ${authStatus.isAuthenticated ? renderAuthenticatedUI(authStatus) : renderSignInUI()}
-        </div>
+          <h3 class="card-title">AI Provider</h3>
+          <p class="card-description">Configure your OpenAI-compatible API provider.</p>
 
-        <!-- Advanced Settings (collapsed by default) -->
-        <details class="advanced-settings">
-          <summary class="advanced-settings-toggle">Advanced Settings</summary>
-          <div class="card" style="margin-top: 12px;">
-            <div class="form-group">
-              <label class="form-label">API Key (Manual Override)</label>
-              <input
-                type="password"
-                id="api-key-input"
-                class="input input-lg"
-                placeholder="Enter your API key..."
-              />
-              <p class="form-hint">
-                Only use this if you have your own API key. Otherwise, sign in above.
-              </p>
-            </div>
-            <button id="save-key-btn" class="btn btn-secondary" style="margin-top: 12px;">Save API Key</button>
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="form-label">Provider</label>
+            <select id="provider-select" class="input input-lg">
+              ${Object.entries(PROVIDERS).map(([key, p]) => `
+                <option value="${key}" ${currentProvider === key ? 'selected' : ''}>${p.name}${!p.available ? ' (Coming Soon)' : ''}</option>
+              `).join('')}
+            </select>
+            <p class="form-hint" id="provider-hint">${providerInfo.description}</p>
           </div>
-        </details>
+
+          <div id="provider-unavailable" class="provider-unavailable ${providerInfo.available ? 'hidden' : ''}">
+            <p>This provider is not yet available. Only OpenAI-compatible APIs are supported at the moment.</p>
+            <p>Try <strong>OpenAI</strong>, <strong>OpenRouter</strong>, or a <strong>Custom Endpoint</strong>.</p>
+          </div>
+
+          <div id="config-fields" class="${!providerInfo.available ? 'fields-disabled' : ''}">
+            <div class="form-group">
+              <label class="form-label">Base URL</label>
+              <input
+                type="text"
+                id="base-url-input"
+                class="input input-lg"
+                placeholder="https://api.openai.com/v1"
+                value="${config.base_url || providerInfo.baseUrl || ''}"
+                ${!providerInfo.available ? 'disabled' : ''}
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Model</label>
+              <input
+                type="text"
+                id="model-input"
+                class="input input-lg"
+                placeholder="gpt-5.1"
+                value="${config.model || providerInfo.model || ''}"
+                ${!providerInfo.available ? 'disabled' : ''}
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">API Key</label>
+              <div class="input-with-action">
+                <input
+                  type="password"
+                  id="api-key-input"
+                  class="input input-lg"
+                  placeholder="Enter your API key..."
+                  value="${config.api_key || ''}"
+                  ${!providerInfo.available ? 'disabled' : ''}
+                />
+                <button type="button" id="clear-key-btn" class="btn btn-secondary btn-icon" title="Clear API key" ${!config.api_key || !providerInfo.available ? 'disabled' : ''}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+              <p class="form-hint">Your API key is stored locally and never shared.</p>
+            </div>
+
+            <button id="save-config-btn" class="btn btn-primary" style="margin-top: 16px; width: 100%;" ${!providerInfo.available ? 'disabled' : ''}>
+              Save Configuration
+            </button>
+          </div>
+        </div>
 
         <div style="margin-top: 24px;">
           <button id="back-btn" class="btn btn-secondary btn-lg" style="width: 100%;">Back to Library</button>
         </div>
+
+        <!-- Version Info -->
+        <div class="version-info">
+          <span id="version-text">Version ${window.__TAURI__?.app?.getVersion ? 'loading...' : 'unknown'}</span>
+          <button id="check-updates-btn" class="version-link">Check for updates</button>
+        </div>
       </div>
     </div>
   `;
 
-  // Load existing API key for advanced settings
-  try {
-    const existingKey = await getApiKey();
-    if (existingKey) {
-      document.getElementById('api-key-input').value = existingKey;
-    }
-  } catch (e) {
-    // No key set yet
-  }
+  // Load version
+  loadVersion();
 
   // Event listeners
-  setupEventListeners(authStatus.isAuthenticated);
+  setupEventListeners();
 }
 
-function renderSignInUI() {
-  return `
-    <div class="auth-section">
-      <div class="auth-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </div>
-      <h3 class="auth-title">Sign in to get started</h3>
-      <p class="auth-description">
-        Sign in with your Liminal account to access AI-powered learning features.
-      </p>
-      <button id="signin-btn" class="btn btn-primary btn-lg auth-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-          <polyline points="10 17 15 12 10 7"></polyline>
-          <line x1="15" y1="12" x2="3" y2="12"></line>
-        </svg>
-        Sign In
-      </button>
-    </div>
-  `;
+async function loadVersion() {
+  try {
+    const { getVersion } = window.__TAURI__.app;
+    const version = await getVersion();
+    document.getElementById('version-text').textContent = `Version ${version}`;
+  } catch (e) {
+    console.error('Failed to get version:', e);
+    document.getElementById('version-text').textContent = 'Version unknown';
+  }
 }
 
-function renderAuthenticatedUI(authStatus) {
-  return `
-    <div class="auth-section">
-      <div class="auth-icon auth-icon-success">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      </div>
-      <h3 class="auth-title">You're signed in</h3>
-      <p class="auth-email">${authStatus.email || 'Unknown email'}</p>
-      <p class="auth-description">
-        Your account is connected and ready to use.
-      </p>
-      <button id="signout-btn" class="btn btn-secondary auth-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        Sign Out
-      </button>
-    </div>
-  `;
-}
-
-function setupEventListeners(isAuthenticated) {
+function setupEventListeners() {
   // Back button
   document.getElementById('back-btn').addEventListener('click', () => {
     router.navigate('/projects');
   });
 
-  // Save API key button (advanced settings)
-  document.getElementById('save-key-btn').addEventListener('click', async () => {
-    const key = document.getElementById('api-key-input').value.trim();
+  // Check for updates button
+  document.getElementById('check-updates-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('check-updates-btn');
+    btn.textContent = 'Checking...';
+    btn.disabled = true;
 
-    if (!key) {
-      showError('Please enter an API key');
+    try {
+      await checkForUpdates(false);
+    } finally {
+      btn.textContent = 'Check for updates';
+      btn.disabled = false;
+    }
+  });
+
+  // Provider select change
+  const providerSelect = document.getElementById('provider-select');
+  providerSelect.addEventListener('change', (e) => {
+    const provider = e.target.value;
+    const preset = PROVIDERS[provider];
+
+    // Update hint
+    document.getElementById('provider-hint').textContent = preset.description;
+
+    // Show/hide unavailable message
+    const unavailableMsg = document.getElementById('provider-unavailable');
+    const configFields = document.getElementById('config-fields');
+
+    if (!preset.available) {
+      unavailableMsg.classList.remove('hidden');
+      configFields.classList.add('fields-disabled');
+    } else {
+      unavailableMsg.classList.add('hidden');
+      configFields.classList.remove('fields-disabled');
+    }
+
+    // Update fields
+    const baseUrlInput = document.getElementById('base-url-input');
+    const modelInput = document.getElementById('model-input');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveBtn = document.getElementById('save-config-btn');
+    const clearBtn = document.getElementById('clear-key-btn');
+
+    baseUrlInput.value = preset.baseUrl;
+    modelInput.value = preset.model;
+
+    baseUrlInput.disabled = !preset.available;
+    modelInput.disabled = !preset.available;
+    apiKeyInput.disabled = !preset.available;
+    saveBtn.disabled = !preset.available;
+    clearBtn.disabled = !preset.available || !apiKeyInput.value;
+  });
+
+  // Clear API key button
+  document.getElementById('clear-key-btn').addEventListener('click', async () => {
+    const apiKeyInput = document.getElementById('api-key-input');
+    const clearBtn = document.getElementById('clear-key-btn');
+
+    try {
+      await setApiKey('');
+      apiKeyInput.value = '';
+      clearBtn.disabled = true;
+      showSuccess('API key cleared');
+    } catch (e) {
+      showError('Failed to clear API key: ' + e);
+    }
+  });
+
+  // Update clear button state when API key changes
+  document.getElementById('api-key-input').addEventListener('input', (e) => {
+    document.getElementById('clear-key-btn').disabled = !e.target.value;
+  });
+
+  // Save configuration button
+  document.getElementById('save-config-btn').addEventListener('click', async () => {
+    const provider = document.getElementById('provider-select').value;
+    const baseUrl = document.getElementById('base-url-input').value.trim();
+    const model = document.getElementById('model-input').value.trim();
+    const apiKey = document.getElementById('api-key-input').value.trim();
+
+    // Validation
+    if (!apiKey) {
+      showError('API key is required');
+      return;
+    }
+
+    if (!baseUrl) {
+      showError('Base URL is required');
+      return;
+    }
+
+    if (!model) {
+      showError('Model is required');
       return;
     }
 
     try {
-      await setApiKey(key);
-      showSuccess('API key saved!');
+      // Save all config values
+      await setProvider(provider);
+      await setBaseUrl(baseUrl);
+      await setModel(model);
+      await setApiKey(apiKey);
+
+      showSuccess('Configuration saved!');
     } catch (e) {
       showError('Failed to save: ' + e);
     }
   });
-
-  // Auth-specific buttons
-  if (isAuthenticated) {
-    document.getElementById('signout-btn').addEventListener('click', handleSignOut);
-  } else {
-    document.getElementById('signin-btn').addEventListener('click', handleSignIn);
-  }
-}
-
-async function handleSignIn() {
-  if (isSigningIn) return;
-
-  const btn = document.getElementById('signin-btn');
-  isSigningIn = true;
-  btn.disabled = true;
-  btn.innerHTML = `
-    <div class="btn-spinner"></div>
-    Opening browser...
-  `;
-
-  try {
-    await startSignIn();
-    // Browser will open, and the app will receive a deep link callback
-    // The callback is handled in app.js
-    btn.innerHTML = `
-      <div class="btn-spinner"></div>
-      Waiting for authorization...
-    `;
-  } catch (e) {
-    showError('Failed to start sign in: ' + e);
-    isSigningIn = false;
-    btn.disabled = false;
-    btn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-        <polyline points="10 17 15 12 10 7"></polyline>
-        <line x1="15" y1="12" x2="3" y2="12"></line>
-      </svg>
-      Sign In
-    `;
-  }
-}
-
-async function handleSignOut() {
-  try {
-    await signOut();
-    showSuccess('Signed out successfully');
-    // Re-render the settings page
-    renderSettings();
-  } catch (e) {
-    showError('Failed to sign out: ' + e);
-  }
 }

@@ -134,11 +134,11 @@ cat > "$OUTPUT_DIR/latest.json" << EOF
   "platforms": {
     "darwin-aarch64": {
       "signature": "$AARCH64_SIG",
-      "url": "https://github.com/4tyone/liminal-download/releases/download/$VERSION/Liminal_${VERSION}_aarch64.app.tar.gz"
+      "url": "https://github.com/4tyone/liminal/releases/download/$VERSION/Liminal_${VERSION}_aarch64.app.tar.gz"
     },
     "darwin-x86_64": {
       "signature": "$X64_SIG",
-      "url": "https://github.com/4tyone/liminal-download/releases/download/$VERSION/Liminal_${VERSION}_x64.app.tar.gz"
+      "url": "https://github.com/4tyone/liminal/releases/download/$VERSION/Liminal_${VERSION}_x64.app.tar.gz"
     }
   }
 }
@@ -148,7 +148,7 @@ echo_info "Release artifacts created in $OUTPUT_DIR:"
 ls -la "$OUTPUT_DIR"
 
 # GitHub Release
-GITHUB_REPO="4tyone/liminal-download"
+GITHUB_REPO="4tyone/liminal"
 
 echo ""
 echo_info "Creating GitHub release for tag $VERSION..."

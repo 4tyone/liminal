@@ -9,8 +9,6 @@ pub struct ChatCompletionRequest {
     pub messages: Vec<ChatMessage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_tokens: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,7 +21,7 @@ pub struct ChatMessage {
 #[derive(Debug, Deserialize)]
 struct ChatCompletionResponse {
     #[allow(dead_code)]
-    id: String,
+    id: Option<String>,
     choices: Vec<Choice>,
     #[allow(dead_code)]
     usage: Option<Usage>,
@@ -32,7 +30,7 @@ struct ChatCompletionResponse {
 #[derive(Debug, Deserialize)]
 struct Choice {
     #[allow(dead_code)]
-    index: usize,
+    index: Option<usize>,
     message: ChatMessage,
     #[allow(dead_code)]
     finish_reason: Option<String>,
@@ -55,21 +53,30 @@ pub struct LlmClient {
 }
 
 impl LlmClient {
-    pub fn new(_base_url: &str, api_key: &str, _model: &str) -> Self {
+    /// Create a new LLM client with the given configuration
+    pub fn new(base_url: &str, api_key: &str, model: &str) -> Self {
         let client = Client::builder()
             .timeout(Duration::from_secs(300)) // 5 minute timeout for long generations
             .build()
             .expect("Failed to create HTTP client");
 
-        let base_url = "https://openai-proxy-aifp.onrender.com/v1/chat/completions".to_string();
-        let model = "cerebras/qwen-3-235b-a22b-instruct-2507".to_string();
-
         Self {
             client,
-            base_url,
+            base_url: base_url.to_string(),
             api_key: api_key.to_string(),
-            model,
+            model: model.to_string(),
         }
+    }
+
+    /// Create a new LLM client from the app's configuration
+    pub fn from_config() -> Result<Self, String> {
+        let (_, base_url, model, api_key) = super::config_service::get_effective_config()?;
+
+        if api_key.is_empty() {
+            return Err("No API key configured. Please add your API key in Settings.".to_string());
+        }
+
+        Ok(Self::new(&base_url, &api_key, &model))
     }
 
     /// Send a chat completion request
@@ -77,19 +84,23 @@ impl LlmClient {
         &self,
         messages: Vec<ChatMessage>,
         temperature: Option<f32>,
-        max_tokens: Option<u32>,
     ) -> Result<String, String> {
         let request = ChatCompletionRequest {
             model: self.model.clone(),
             messages,
             temperature,
-            max_tokens,
         };
 
-        // Use the full URL directly (already contains /chat/completions)
+        // Build the full URL - append /chat/completions if base_url doesn't already include it
+        let url = if self.base_url.contains("/chat/completions") {
+            self.base_url.clone()
+        } else {
+            format!("{}/chat/completions", self.base_url.trim_end_matches('/'))
+        };
+
         let response = self
             .client
-            .post(&self.base_url)
+            .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&request)

@@ -303,6 +303,7 @@ pub fn save_chat_session(session: &ChatSession) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn add_message_to_session(
     project_id: &str,
     session_id: &str,

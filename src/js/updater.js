@@ -6,16 +6,24 @@ let updateAvailable = null;
 export async function checkForUpdates(silent = false) {
   try {
     const { check } = window.__TAURI__.updater;
+    const { getVersion } = window.__TAURI__.app;
+
+    const currentVersion = await getVersion();
+    console.log('Current version:', currentVersion);
+    console.log('Checking for updates...');
 
     const update = await check();
+    console.log('Update check result:', update);
 
     if (update) {
+      console.log('Update available:', update.version);
       updateAvailable = update;
       if (!silent) {
         showUpdateAvailable(update);
       }
       return update;
     } else {
+      console.log('No update available');
       if (!silent) {
         showSuccess('You are on the latest version!');
       }
@@ -24,7 +32,7 @@ export async function checkForUpdates(silent = false) {
   } catch (e) {
     console.error('Update check failed:', e);
     if (!silent) {
-      showError('Failed to check for updates');
+      showError('Failed to check for updates: ' + e.message);
     }
     return null;
   }

@@ -31,6 +31,16 @@ pub fn set_model(model: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn get_provider() -> Result<Option<String>, String> {
+    config_service::get_provider()
+}
+
+#[tauri::command]
+pub fn set_provider(provider: String) -> Result<(), String> {
+    config_service::set_provider(&provider)
+}
+
+#[tauri::command]
 pub fn get_config() -> Result<config_service::Config, String> {
     config_service::get_full_config()
 }

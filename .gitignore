@@ -39,3 +39,6 @@ src-tauri/target/
 *.env
 .env.*
 codex/
+
+# Release artifacts (uploaded to GitHub Releases)
+releases/

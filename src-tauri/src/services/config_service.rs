@@ -2,6 +2,10 @@ use std::fs;
 use serde::{Deserialize, Serialize};
 use super::file_service::get_app_data_dir;
 
+// Default values (OpenAI as the most common provider)
+pub const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
+pub const DEFAULT_MODEL: &str = "gpt-5.1";
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
@@ -10,6 +14,8 @@ pub struct Config {
     pub base_url: Option<String>,
     #[serde(default)]
     pub model: Option<String>,
+    #[serde(default)]
+    pub provider: Option<String>,
     #[serde(default)]
     pub theme: String,
 }
@@ -47,7 +53,11 @@ pub fn get_api_key() -> Result<Option<String>, String> {
 
 pub fn set_api_key(key: &str) -> Result<(), String> {
     let mut config = load_config().unwrap_or_default();
-    config.api_key = Some(key.to_string());
+    if key.is_empty() {
+        config.api_key = None;
+    } else {
+        config.api_key = Some(key.to_string());
+    }
     save_config(&config)
 }
 
@@ -73,6 +83,29 @@ pub fn set_model(model: &str) -> Result<(), String> {
     save_config(&config)
 }
 
+pub fn get_provider() -> Result<Option<String>, String> {
+    let config = load_config()?;
+    Ok(config.provider)
+}
+
+pub fn set_provider(provider: &str) -> Result<(), String> {
+    let mut config = load_config().unwrap_or_default();
+    config.provider = Some(provider.to_string());
+    save_config(&config)
+}
+
 pub fn get_full_config() -> Result<Config, String> {
     load_config()
+}
+
+/// Get effective config values with defaults applied
+pub fn get_effective_config() -> Result<(String, String, String, String), String> {
+    let config = load_config()?;
+
+    let provider = config.provider.unwrap_or_else(|| "openai".to_string());
+    let api_key = config.api_key.unwrap_or_default();
+    let base_url = config.base_url.unwrap_or_else(|| DEFAULT_BASE_URL.to_string());
+    let model = config.model.unwrap_or_else(|| DEFAULT_MODEL.to_string());
+
+    Ok((provider, base_url, model, api_key))
 }
