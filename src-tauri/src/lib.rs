@@ -3,6 +3,7 @@ mod models;
 mod services;
 
 use commands::*;
+use tauri::Listener;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -10,6 +11,24 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            // Handle deep links
+            #[cfg(desktop)]
+            {
+                let handle = app.handle().clone();
+                app.listen("deep-link://new-url", move |event| {
+                    let payload = event.payload();
+                    // Parse the URL string (it comes as a JSON array)
+                    if let Ok(url_array) = serde_json::from_str::<Vec<String>>(payload) {
+                        if let Some(url) = url_array.first() {
+                            handle_deep_link(&handle, url);
+                        }
+                    }
+                });
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Config commands
             get_api_key,
@@ -19,6 +38,13 @@ pub fn run() {
             get_model,
             set_model,
             get_config,
+            // Auth commands
+            start_signin,
+            handle_auth_callback,
+            check_auth_status,
+            get_current_user,
+            signout,
+            fetch_api_key_from_server,
             // Project commands
             list_projects,
             get_project,

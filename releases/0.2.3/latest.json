@@ -1,0 +1,15 @@
+{
+  "version": "0.2.3",
+  "notes": "Liminal v0.2.3",
+  "pub_date": "2025-12-02T12:05:58Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTNDBTMklXTSt6N0Z4YkVaa0pOYUU5Mk5valBwcktCczZERy84eld5cU9Yb2x3amg1cWR5bkdxcE1JVWNLZnhMdVZnQ2wvQjhMaXhRcEpEcFZTZkRXMG1MYll4Tm41K2dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY0Njc3MDU1CWZpbGU6TGltaW5hbC5hcHAudGFyLmd6CkwyVFArd1ZKTkM5L3owRGY1NnRrZTA1ZGk4ZVR6VU85MlViRytkNW5PUm5nNjZwNGRmcVdjLzJUQ05GQWVjK0pmWjcrNXpIM1ZqTi9YOUdXWjZ1b0JnPT0K",
+      "url": "https://github.com/4tyone/liminal-download/releases/download/0.2.3/Liminal_0.2.3_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTNDBTMklXTSt6N1BBQmV2MmkyT094QTd6ZHB3eVkxWnJiSmFEeTBWMFprWHYvbjU4UHpnMDVSNlhSYVhQUTVKOFI5eVUwdXdSRi9LQzlZcE9kamcvbUJTWlFzeHhTTlFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY0Njc3MTUzCWZpbGU6TGltaW5hbC5hcHAudGFyLmd6CldVSTgvQ2QrcmpNWXFNblJXYlV2S1NzQ05tM3lHOUNHRmEzMkt3QXpDUlhid0R2WFVrODVUamxyYVlVa1dnaW9CYjZ0dU1iZXVkZFhYcE9OZFF5c0RRPT0K",
+      "url": "https://github.com/4tyone/liminal-download/releases/download/0.2.3/Liminal_0.2.3_x64.app.tar.gz"
+    }
+  }
+}

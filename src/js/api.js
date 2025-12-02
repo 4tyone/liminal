@@ -1,7 +1,45 @@
 // Tauri API wrapper
 const { invoke } = window.__TAURI__.core;
 
+// ============================================================================
+// Auth commands
+// ============================================================================
+
+export async function startSignIn() {
+  return await invoke('start_signin');
+}
+
+export async function handleAuthCallback(accessToken, refreshToken, expiresIn, userId, email, state) {
+  return await invoke('handle_auth_callback', {
+    accessToken,
+    refreshToken,
+    expiresIn,
+    userId,
+    email,
+    state
+  });
+}
+
+export async function checkAuthStatus() {
+  return await invoke('check_auth_status');
+}
+
+export async function getCurrentUser() {
+  return await invoke('get_current_user');
+}
+
+export async function signOut() {
+  return await invoke('signout');
+}
+
+export async function fetchApiKeyFromServer() {
+  return await invoke('fetch_api_key_from_server');
+}
+
+// ============================================================================
 // Config commands
+// ============================================================================
+
 export async function getApiKey() {
   return await invoke('get_api_key');
 }
